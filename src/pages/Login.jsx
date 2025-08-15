@@ -1,29 +1,33 @@
-import React, { useState } from 'react';
-import { login } from '../auth';
+import React, { useState } from "react";
+import http from "../http";
 
 export default function Login() {
-  const [email, setEmail] = useState('abouhadi2@gmail.com');
-  const [password, setPassword] = useState('Baker@2030');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [err, setErr] = useState("");
 
-  async function onSubmit(e){
+  const submit = async (e) => {
     e.preventDefault();
-    setError('');
-    try{
-      await login(email, password);
-      location.href = '/visits';
-    }catch(e){ setError('فشل تسجيل الدخول'); }
-  }
+    setErr("");
+    try {
+      const { data } = await http.post("/api/auth/login", { email, password });
+      const token = data?.token || data?.access_token;
+      if (!token) throw new Error("no token");
+      localStorage.setItem("token", token);
+      window.location.href = "/customers";
+    } catch (_) {
+      setErr("فشل تسجيل الدخول");
+    }
+  };
 
   return (
-    <div style={{maxWidth:420, margin:'40px auto', direction:'rtl'}}>
-      <h2>تسجيل الدخول</h2>
-      {error && <div style={{color:'crimson'}}>{error}</div>}
-      <form onSubmit={onSubmit}>
-        <div><label>الايميل</label><input value={email} onChange={e=>setEmail(e.target.value)} style={{width:'100%'}}/></div>
-        <div><label>الرمز</label><input type="password" value={password} onChange={e=>setPassword(e.target.value)} style={{width:'100%'}}/></div>
-        <button type="submit" style={{marginTop:12}}>دخول</button>
-      </form>
-    </div>
+    <form onSubmit={submit} style={{ maxWidth: 360, margin: "40px auto" }}>
+      {err && <div style={{ color: "crimson", marginBottom: 8 }}>{err}</div>}
+      <label>الايميل</label>
+      <input value={email} onChange={(e) => setEmail(e.target.value)} />
+      <label>الرمز</label>
+      <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+      <button type="submit">دخول</button>
+    </form>
   );
 }
