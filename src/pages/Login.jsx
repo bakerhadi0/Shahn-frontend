@@ -1,37 +1,29 @@
-
-import React, { useState } from "react";
-import axios from "axios";
+import React, { useState } from 'react';
+import { login } from '../auth';
 
 export default function Login() {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('abouhadi2@gmail.com');
+  const [password, setPassword] = useState('Baker@2030');
+  const [error, setError] = useState('');
 
-    const handleLogin = async (e) => {
-        e.preventDefault();
-        try {
-            const res = await axios.post("http://localhost:5000/api/login", { email, password });
-            alert("Login successful");
-            console.log(res.data);
-        } catch (err) {
-            alert("Login failed");
-            console.error(err);
-        }
-    };
+  async function onSubmit(e){
+    e.preventDefault();
+    setError('');
+    try{
+      await login(email, password);
+      location.href = '/visits';
+    }catch(e){ setError('فشل تسجيل الدخول'); }
+  }
 
-    return (
-        <div style={{ padding: "20px" }}>
-            <h2>Login</h2>
-            <form onSubmit={handleLogin}>
-                <div>
-                    <label>Email:</label>
-                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                </div>
-                <div>
-                    <label>Password:</label>
-                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                </div>
-                <button type="submit">Login</button>
-            </form>
-        </div>
-    );
+  return (
+    <div style={{maxWidth:420, margin:'40px auto', direction:'rtl'}}>
+      <h2>تسجيل الدخول</h2>
+      {error && <div style={{color:'crimson'}}>{error}</div>}
+      <form onSubmit={onSubmit}>
+        <div><label>الايميل</label><input value={email} onChange={e=>setEmail(e.target.value)} style={{width:'100%'}}/></div>
+        <div><label>الرمز</label><input type="password" value={password} onChange={e=>setPassword(e.target.value)} style={{width:'100%'}}/></div>
+        <button type="submit" style={{marginTop:12}}>دخول</button>
+      </form>
+    </div>
+  );
 }
