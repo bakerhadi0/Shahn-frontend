@@ -1,87 +1,43 @@
-import React, { useEffect, useState } from 'react';
-import { endpoints } from '../api';
-import { getToken } from '../auth';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { j } from "../http";
 
-export default function Customers(){
-  const nav = useNavigate();
-  const [items,setItems]=useState([]);
-  const [q,setQ]=useState('');
-  const [f,setF]=useState({name:'',company:'',phone:'',location:'',notes:''});
-  const [error,setError]=useState('');
-  const [saving,setSaving]=useState(false);
+export default function Customers() {
+  const [list, setList] = useState([]);
+  const [f, setF] = useState({ name:"", company:"", phone:"", location:"", notes:"" });
+  const [err, setErr] = useState("");
 
-  const token = getToken();
-
-  const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
-
-  const load = async()=>{
-    setError('');
-    const url = q ? `${endpoints.customers}?q=${encodeURIComponent(q)}` : endpoints.customers;
-    try{
-      const r = await fetch(url,{ headers: { ...authHeader } });
-      if(!r.ok){ setError(`Load failed: ${r.status}`); return; }
-      setItems(await r.json());
-    }catch(e){ setError('Network error'); }
+  const load = async () => {
+    try { const data = await j("/api/customers"); setList(Array.isArray(data)?data:[]); }
+    catch { setErr("تعذر تحميل العملاء"); }
   };
+  useEffect(()=>{ load(); },[]);
 
-  useEffect(()=>{
-    if(!token){ nav('/login'); return; }
-    load();
-    // eslint-disable-next-line
-  },[token]);
-
-  const add = async(e)=>{
-    e.preventDefault();
-    setError('');
-    if(!f.name.trim()){ setError('الاسم مطلوب'); return; }
-    setSaving(true);
-    try{
-      const r = await fetch(endpoints.customers,{
-        method:'POST',
-        headers:{ 'Content-Type':'application/json', ...authHeader },
-        body: JSON.stringify(f)
-      });
-      if(!r.ok){
-        const t = await r.text();
-        setError(t || `Save failed: ${r.status}`);
-      }else{
-        setF({name:'',company:'',phone:'',location:'',notes:''});
-        await load();
-      }
-    }catch(e){ setError('Network error'); }
-    finally{ setSaving(false); }
+  const save = async (e) => {
+    e.preventDefault(); setErr("");
+    try {
+      const c = await j("/api/customers", { method:"POST", body: JSON.stringify(f) });
+      setF({ name:"", company:"", phone:"", location:"", notes:"" });
+      setList([c, ...list]);
+    } catch { setErr("تعذر الحفظ"); }
   };
 
   return (
-    <div style={{padding:16,maxWidth:720,margin:'0 auto'}}>
+    <div style={{ maxWidth: 900, margin: "20px auto" }}>
       <h2>العملاء</h2>
-
-      <div style={{margin:'12px 0',display:'flex',gap:8}}>
-        <input placeholder="بحث..." value={q} onChange={e=>setQ(e.target.value)} />
-        <button onClick={load}>بحث</button>
-      </div>
-
-      <form onSubmit={add} style={{display:'grid',gap:8}}>
-        <input required placeholder="الاسم"     value={f.name}     onChange={e=>setF({...f,name:e.target.value})}/>
-        <input placeholder="الشركة"   value={f.company}  onChange={e=>setF({...f,company:e.target.value})}/>
-        <input placeholder="الهاتف"    value={f.phone}    onChange={e=>setF({...f,phone:e.target.value})}/>
-        <input placeholder="الموقع"    value={f.location} onChange={e=>setF({...f,location:e.target.value})}/>
-        <input placeholder="ملاحظات"  value={f.notes}    onChange={e=>setF({...f,notes:e.target.value})}/>
-        {error && <div style={{color:'crimson'}}>{error}</div>}
-        <button type="submit" disabled={saving}>{saving?'...يحفظ':'إضافة'}</button>
+      {err && <div style={{ color: "crimson" }}>{err}</div>}
+      <form onSubmit={save} style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8}}>
+        <input placeholder="الاسم" value={f.name} onChange={e=>setF({...f,name:e.target.value})}/>
+        <input placeholder="الشركة" value={f.company} onChange={e=>setF({...f,company:e.target.value})}/>
+        <input placeholder="الهاتف" value={f.phone} onChange={e=>setF({...f,phone:e.target.value})}/>
+        <input placeholder="الموقع" value={f.location} onChange={e=>setF({...f,location:e.target.value})}/>
+        <input placeholder="ملاحظات" value={f.notes} onChange={e=>setF({...f,notes:e.target.value})}/>
+        <button style={{gridColumn:"span 5"}}>إضافة</button>
       </form>
-
-      <table style={{marginTop:16,width:'100%'}} border="1" cellPadding="6">
-        <thead><tr><th>الاسم</th><th>الشركة</th><th>الهاتف</th><th>الموقع</th><th>ملاحظات</th></tr></thead>
-        <tbody>
-          {items.map(x=>(
-            <tr key={x._id}>
-              <td>{x.name}</td><td>{x.company||'-'}</td><td>{x.phone||'-'}</td>
-              <td>{x.location||'-'}</td><td>{x.notes||'-'}</td>
-            </tr>
-          ))}
-        </tbody>
+      <table style={{ width:"100%", marginTop:16 }}>
+        <thead><tr><th>الاسم</th><th>الشركة</th><th>الهاتف</th></tr></thead>
+        <tbody>{list.map(x=>(
+          <tr key={x._id}><td>{x.name}</td><td>{x.company}</td><td>{x.phone}</td></tr>
+        ))}</tbody>
       </table>
     </div>
   );
