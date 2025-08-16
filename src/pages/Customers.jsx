@@ -1,43 +1,69 @@
 import React, { useEffect, useState } from "react";
-import { j } from "../http";
+import http from "../http";
 
-export default function Customers() {
-  const [list, setList] = useState([]);
-  const [f, setF] = useState({ name:"", company:"", phone:"", location:"", notes:"" });
-  const [err, setErr] = useState("");
+export default function Customers(){
+  const [items,setItems]=useState([]);
+  const [loading,setLoading]=useState(false);
+  const [error,setError]=useState("");
+  const [form,setForm]=useState({name:"",company:"",phone:"",location:"",notes:""});
 
-  const load = async () => {
-    try { const data = await j("/api/customers"); setList(Array.isArray(data)?data:[]); }
-    catch { setErr("تعذر تحميل العملاء"); }
+  const load = async()=>{
+    try{
+      setError(""); setLoading(true);
+      const {data}=await http.get("/api/customers");
+      setItems(Array.isArray(data)?data:[]);
+    }catch(e){ setError("تعذّر تحميل العملاء"); }
+    finally{ setLoading(false); }
   };
+
   useEffect(()=>{ load(); },[]);
 
-  const save = async (e) => {
-    e.preventDefault(); setErr("");
-    try {
-      const c = await j("/api/customers", { method:"POST", body: JSON.stringify(f) });
-      setF({ name:"", company:"", phone:"", location:"", notes:"" });
-      setList([c, ...list]);
-    } catch { setErr("تعذر الحفظ"); }
+  const save = async(e)=>{
+    e.preventDefault();
+    try{
+      setError("");
+      await http.post("/api/customers", form);
+      setForm({name:"",company:"",phone:"",location:"",notes:""});
+      await load();
+    }catch(e){ setError("تعذّر الحفظ"); }
   };
 
+  const on = (k)=>(e)=> setForm(v=>({...v,[k]:e.target.value}));
+
   return (
-    <div style={{ maxWidth: 900, margin: "20px auto" }}>
+    <div style={{padding:"24px"}}>
       <h2>العملاء</h2>
-      {err && <div style={{ color: "crimson" }}>{err}</div>}
-      <form onSubmit={save} style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8}}>
-        <input placeholder="الاسم" value={f.name} onChange={e=>setF({...f,name:e.target.value})}/>
-        <input placeholder="الشركة" value={f.company} onChange={e=>setF({...f,company:e.target.value})}/>
-        <input placeholder="الهاتف" value={f.phone} onChange={e=>setF({...f,phone:e.target.value})}/>
-        <input placeholder="الموقع" value={f.location} onChange={e=>setF({...f,location:e.target.value})}/>
-        <input placeholder="ملاحظات" value={f.notes} onChange={e=>setF({...f,notes:e.target.value})}/>
-        <button style={{gridColumn:"span 5"}}>إضافة</button>
+      {error && <div style={{color:"crimson",marginBottom:8}}>{error}</div>}
+      <form onSubmit={save} style={{display:"grid",gridTemplateColumns:"repeat(5,1fr) auto", gap:8, maxWidth:1000}}>
+        <input placeholder="الاسم" value={form.name} onChange={on("name")} required/>
+        <input placeholder="الشركة" value={form.company} onChange={on("company")}/>
+        <input placeholder="الهاتف" value={form.phone} onChange={on("phone")}/>
+        <input placeholder="الموقع" value={form.location} onChange={on("location")}/>
+        <input placeholder="ملاحظات" value={form.notes} onChange={on("notes")}/>
+        <button type="submit" disabled={loading}>إضافة</button>
       </form>
-      <table style={{ width:"100%", marginTop:16 }}>
-        <thead><tr><th>الاسم</th><th>الشركة</th><th>الهاتف</th></tr></thead>
-        <tbody>{list.map(x=>(
-          <tr key={x._id}><td>{x.name}</td><td>{x.company}</td><td>{x.phone}</td></tr>
-        ))}</tbody>
+
+      <table style={{width:"100%",marginTop:16,borderCollapse:"collapse"}}>
+        <thead>
+          <tr>
+            <th style={{textAlign:"right",borderBottom:"1px solid #ddd"}}>الاسم</th>
+            <th style={{textAlign:"right",borderBottom:"1px solid #ddd"}}>الشركة</th>
+            <th style={{textAlign:"right",borderBottom:"1px solid #ddd"}}>الهاتف</th>
+            <th style={{textAlign:"right",borderBottom:"1px solid #ddd"}}>الموقع</th>
+            <th style={{textAlign:"right",borderBottom:"1px solid #ddd"}}>ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map(x=>(
+            <tr key={x._id}>
+              <td style={{borderBottom:"1px solid #eee"}}>{x.name}</td>
+              <td style={{borderBottom:"1px solid #eee"}}>{x.company}</td>
+              <td style={{borderBottom:"1px solid #eee"}}>{x.phone}</td>
+              <td style={{borderBottom:"1px solid #eee"}}>{x.location}</td>
+              <td style={{borderBottom:"1px solid #eee"}}>{x.notes}</td>
+            </tr>
+          ))}
+        </tbody>
       </table>
     </div>
   );
