@@ -1,8 +1,4 @@
-const KEY = "auth_token";
-
-export function setToken(t) { localStorage.setItem(KEY, t || ""); }
-export function getToken() { return localStorage.getItem(KEY) || ""; }
-export function clearToken() { localStorage.removeItem(KEY); }
-export function isAuthed() { return !!getToken(); }
-
-export default { setToken, getToken, clearToken, isAuthed };
+export function setToken(t){localStorage.setItem("token",t)}
+export function clearToken(){localStorage.removeItem("token")}
+export function getToken(){return localStorage.getItem("token")||""}
+export function isAuthed(){return !!getToken()}

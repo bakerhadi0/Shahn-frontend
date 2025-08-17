@@ -1,19 +1,15 @@
 import axios from "axios";
-
-const BASE = (import.meta.env && import.meta.env.VITE_API_URL)
-  ? `${import.meta.env.VITE_API_URL}`
-  : "https://shahn-server.onrender.com/api";
+import { getToken } from "./auth";
 
 const http = axios.create({
-  baseURL: BASE,
+  baseURL: import.meta.env.VITE_API_URL || "https://shahn-server.onrender.com",
   headers: { "Content-Type": "application/json" },
 });
 
-http.interceptors.request.use((config) => {
-  const token = localStorage.getItem("auth_token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
+http.interceptors.request.use((cfg) => {
+  const t = getToken();
+  if (t) cfg.headers.Authorization = `Bearer ${t}`;
+  return cfg;
 });
 
 export default http;
-export { BASE };
