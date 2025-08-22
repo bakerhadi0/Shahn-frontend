@@ -1,4 +1,13 @@
 import axios from "axios";
-const http=axios.create({baseURL:import.meta.env.VITE_API_BASE||"https://shahn-server.onrender.com"});
-http.interceptors.request.use(c=>{const t=localStorage.getItem("token");if(t)c.headers.Authorization=`Bearer ${t}`;return c;});
+
+const http = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE
+});
+
+http.interceptors.request.use(cfg => {
+  const t = localStorage.getItem("token");
+  if (t) cfg.headers.Authorization = `Bearer ${t}`;
+  return cfg;
+});
+
 export default http;
