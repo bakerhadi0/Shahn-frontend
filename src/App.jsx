@@ -1,8 +1,7 @@
-import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Customers from "./pages/Customers.jsx";
 import Login from "./pages/Login.jsx";
-import { isAuthed } from "./auth";
+import { isAuthed } from "./auth.js";
 
 function RequireAuth({ children }) {
   return isAuthed() ? children : <Navigate to="/login" replace />;

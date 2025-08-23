@@ -1,13 +1,12 @@
-import axios from "axios";
+import axios from "axios"
 
-const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE
-});
+export const http = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE,
+  headers: { "Content-Type": "application/json" }
+})
 
 http.interceptors.request.use(cfg => {
-  const t = localStorage.getItem("token");
-  if (t) cfg.headers.Authorization = `Bearer ${t}`;
-  return cfg;
-});
-
-export default http;
+  const t = localStorage.getItem("token")
+  if (t) cfg.headers.Authorization = `Bearer ${t}`
+  return cfg
+})
