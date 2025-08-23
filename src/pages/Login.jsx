@@ -1,7 +1,7 @@
 import React, { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { http } from "../http"
-import { setToken } from "../auth"
+import { setToken, setUser } from "../auth"
 
 export default function Login() {
   const [email, setEmail] = useState("abuohadi2@gmail.com")
@@ -15,13 +15,12 @@ export default function Login() {
     try {
       const { data } = await http.post("/api/auth/login", { email, password })
       const t = data.token || data.access_token || (data.data && data.data.token) || ""
-      if (t) {
-        setToken(t)
-        nav("/customers", { replace: true })
-      } else {
-        alert("Token missing")
-      }
-    } catch (err) {
+      if (!t) return alert("Token missing")
+      setToken(t)
+      const me = await http.get("/api/auth/me")
+      setUser(me.data || {})
+      nav("/customers", { replace: true })
+    } catch {
       alert("Login failed")
     } finally {
       setLoading(false)
