@@ -1,64 +1,73 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { endpoints } from "../api";
-import SaleForm from "../components/SaleForm";
+import React, { useEffect, useState } from "react"
+import { http } from "../http"
+import { clearToken } from "../auth"
 
-export default function Sales() {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
+export default function Sales(){
+  const [rows,setRows] = useState([])
+  const [products,setProducts] = useState([])
+  const [f,setF] = useState({ productId:"", qty:1, price:"" })
 
-  const load = async () => {
-    try {
-      setErr("");
-      setLoading(true);
-      const { data } = await axios.get(endpoints.sales);
-      setItems(Array.isArray(data) ? data : []);
-    } catch (e) {
-      setErr("تعذر تحميل المبيعات");
-    } finally {
-      setLoading(false);
-    }
-  };
+  async function load(){
+    const [s,p] = await Promise.all([ http.get("/api/sales"), http.get("/api/products") ])
+    setRows(Array.isArray(s.data)?s.data:(s.data.items||[]))
+    setProducts(Array.isArray(p.data)?p.data:(p.data.items||[]))
+  }
 
-  useEffect(() => { load(); }, []);
+  async function add(){
+    if(!f.productId) return
+    await http.post("/api/sales",{ productId:f.productId, qty:+f.qty||1, price:f.price===""?undefined:+f.price })
+    setF({ productId:"", qty:1, price:"" })
+    await load()
+  }
+
+  async function remove(id){
+    await http.delete(`/api/sales/${id}`)
+    await load()
+  }
+
+  useEffect(()=>{ load() }, [])
+  const total = rows.reduce((a,r)=>a+(r.total||0),0)
 
   return (
-    <div className="p-4">
-      <h2 style={{marginBottom:12}}>سجل المبيعات</h2>
-      <SaleForm onCreated={load} />
-      {err && <div style={{color:"crimson", marginBottom:8}}>{err}</div>}
-      {loading ? <div>جاري التحميل...</div> : (
-        <div style={{overflowX:"auto"}}>
-          <table style={{width:"100%", borderCollapse:"collapse"}}>
-            <thead>
-              <tr>
-                <th style={{border:"1px solid #ddd", padding:8}}>المنتج</th>
-                <th style={{border:"1px solid #ddd", padding:8}}>الكمية</th>
-                <th style={{border:"1px solid #ddd", padding:8}}>السعر النهائي</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map(s => (
-                <tr key={s._id}>
-                  <td style={{border:"1px solid #eee", padding:8}}>
-                    {s.product?.name || s.product}
-                  </td>
-                  <td style={{border:"1px solid #eee", padding:8}}>
-                    {s.quantity} × {s.packSize} = {s.quantity * s.packSize}
-                  </td>
-                  <td style={{border:"1px solid #eee", padding:8}}>
-                    {Number(s.total ?? 0).toFixed(2)}
-                  </td>
-                </tr>
-              ))}
-              {!items.length && (
-                <tr><td colSpan="3" style={{padding:12, textAlign:"center"}}>لا توجد مبيعات</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+    <div style={{maxWidth:1100, margin:"24px auto"}}>
+      <h1>المبيعات</h1>
+
+      <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 120px",gap:8,marginBottom:12}}>
+        <select value={f.productId} onChange={e=>setF({...f,productId:e.target.value})}>
+          <option value="">اختر المنتج</option>
+          {products.map(p=><option key={p._id} value={p._id}>{p.name} — {p.price}</option>)}
+        </select>
+        <input placeholder="الكمية" value={f.qty} onChange={e=>setF({...f,qty:e.target.value})} />
+        <input placeholder="السعر (اختياري)" value={f.price} onChange={e=>setF({...f,price:e.target.value})} />
+        <button onClick={add}>إضافة</button>
+      </div>
+
+      <table width="100%" cellPadding="8" style={{borderCollapse:"collapse"}}>
+        <thead>
+          <tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th><th>إجراءات</th></tr>
+        </thead>
+        <tbody>
+          {rows.map(r=>(
+            <tr key={r._id}>
+              <td>{r.product?.name||"-"}</td>
+              <td>{r.qty}</td>
+              <td>{r.price}</td>
+              <td>{r.total}</td>
+              <td><button onClick={()=>remove(r._id)}>حذف</button></td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr><td colSpan="3" align="right">الإجمالي</td><td>{total}</td><td/></tr>
+        </tfoot>
+      </table>
+
+      <div style={{marginTop:16}}>
+        <a href="/customers" style={{marginRight:12}}>العملاء</a>
+        <a href="/products" style={{marginRight:12}}>المنتجات</a>
+        <a href="/sales" style={{marginRight:12}}>المبيعات</a>
+        <button onClick={()=>{ clearToken(); window.location.href="/login" }}>تسجيل الخروج</button>
+      </div>
     </div>
-  );
+  )
 }

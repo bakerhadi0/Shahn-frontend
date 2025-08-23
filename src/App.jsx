@@ -4,7 +4,11 @@ import Login from "./pages/Login.jsx"
 import Customers from "./pages/Customers.jsx"
 import Products from "./pages/Products.jsx"
 import { isAuthed } from "./auth"
-
+import Products from "./pages/Products.jsx"
+import Sales from "./pages/Sales.jsx"
+...
+<Route path="/products" element={<RequireAuth><Products /></RequireAuth>} />
+<Route path="/sales" element={<RequireAuth><Sales /></RequireAuth>} />
 function RequireAuth({ children }) {
   return isAuthed() ? children : <Navigate to="/login" replace />
 }
