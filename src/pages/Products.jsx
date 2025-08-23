@@ -1,64 +1,75 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { endpoints } from "../api";
-import ProductForm from "../components/ProductForm";
+import React, { useEffect, useState } from "react"
+import { http } from "../http"
+import { clearToken } from "../auth"
 
 export default function Products() {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
+  const [rows, setRows] = useState([])
+  const [f, setF] = useState({ name:"", sku:"", price:"", stock:"", notes:"" })
 
-  const load = async () => {
-    try {
-      setErr("");
-      setLoading(true);
-      const { data } = await axios.get(endpoints.products);
-      setItems(Array.isArray(data) ? data : []);
-    } catch (e) {
-      setErr("تعذر تحميل المنتجات");
-    } finally {
-      setLoading(false);
-    }
-  };
+  async function load() {
+    const { data } = await http.get("/api/products")
+    setRows(Array.isArray(data) ? data : (data.items || []))
+  }
 
-  useEffect(() => { load(); }, []);
+  async function add() {
+    if (!f.name) return
+    await http.post("/api/products", { ...f, price:+f.price||0, stock:+f.stock||0 })
+    setF({ name:"", sku:"", price:"", stock:"", notes:"" })
+    await load()
+  }
+
+  async function remove(id) {
+    await http.delete(`/api/products/${id}`)
+    await load()
+  }
+
+  async function edit(r) {
+    const name = prompt("الاسم", r.name) ?? r.name
+    const sku = prompt("SKU", r.sku) ?? r.sku
+    const price = +(prompt("السعر", r.price) ?? r.price)
+    const stock = +(prompt("المخزون", r.stock) ?? r.stock)
+    const notes = prompt("ملاحظات", r.notes || "") ?? r.notes
+    await http.put(`/api/products/${r._id}`, { name, sku, price, stock, notes })
+    await load()
+  }
+
+  useEffect(()=>{ load() }, [])
 
   return (
-    <div className="p-4">
-      <h2 style={{marginBottom:12}}>المنتجات</h2>
-      <ProductForm onCreated={load} />
-      {err && <div style={{color:"crimson", marginBottom:8}}>{err}</div>}
-      {loading ? <div>جاري التحميل...</div> : (
-        <div style={{overflowX:"auto"}}>
-          <table style={{width:"100%", borderCollapse:"collapse"}}>
-            <thead>
-              <tr>
-                <th style={{border:"1px solid #ddd", padding:8}}>الاسم</th>
-                <th style={{border:"1px solid #ddd", padding:8}}>السعر</th>
-                <th style={{border:"1px solid #ddd", padding:8}}>الوحدة</th>
-                <th style={{border:"1px solid #ddd", padding:8}}>حجم العبوة</th>
-                <th style={{border:"1px solid #ddd", padding:8}}>SKU</th>
-                <th style={{border:"1px solid #ddd", padding:8}}>ملاحظات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map(p => (
-                <tr key={p._id}>
-                  <td style={{border:"1px solid #eee", padding:8}}>{p.name}</td>
-                  <td style={{border:"1px solid #eee", padding:8}}>{Number(p.price).toFixed(2)}</td>
-                  <td style={{border:"1px solid #eee", padding:8}}>{p.unitType}</td>
-                  <td style={{border:"1px solid #eee", padding:8}}>{p.packSize}</td>
-                  <td style={{border:"1px solid #eee", padding:8}}>{p.sku}</td>
-                  <td style={{border:"1px solid #eee", padding:8}}>{p.notes}</td>
-                </tr>
-              ))}
-              {!items.length && (
-                <tr><td colSpan="6" style={{padding:12, textAlign:"center"}}>لا توجد منتجات</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+    <div style={{ maxWidth: 1100, margin: "24px auto" }}>
+      <h1>المنتجات</h1>
+
+      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr) 120px",gap:8,marginBottom:12}}>
+        <input placeholder="الاسم" value={f.name} onChange={e=>setF({...f,name:e.target.value})} />
+        <input placeholder="SKU" value={f.sku} onChange={e=>setF({...f,sku:e.target.value})} />
+        <input placeholder="السعر" value={f.price} onChange={e=>setF({...f,price:e.target.value})} />
+        <input placeholder="المخزون" value={f.stock} onChange={e=>setF({...f,stock:e.target.value})} />
+        <input placeholder="ملاحظات" value={f.notes} onChange={e=>setF({...f,notes:e.target.value})} />
+        <button onClick={add}>إضافة</button>
+      </div>
+
+      <table width="100%" cellPadding="8" style={{borderCollapse:"collapse"}}>
+        <thead>
+          <tr><th>الاسم</th><th>SKU</th><th>السعر</th><th>المخزون</th><th>ملاحظات</th><th>إجراءات</th></tr>
+        </thead>
+        <tbody>
+          {rows.map(r=>(
+            <tr key={r._id}>
+              <td>{r.name}</td><td>{r.sku}</td><td>{r.price}</td><td>{r.stock}</td><td>{r.notes}</td>
+              <td>
+                <button onClick={()=>edit(r)}>تعديل</button>{" "}
+                <button onClick={()=>remove(r._id)}>حذف</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <div style={{marginTop:16}}>
+        <a href="/customers" style={{marginRight:12}}>العملاء</a>
+        <a href="/products" style={{marginRight:12}}>المنتجات</a>
+        <button onClick={()=>{ clearToken(); window.location.href="/login" }}>تسجيل الخروج</button>
+      </div>
     </div>
-  );
+  )
 }

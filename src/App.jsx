@@ -1,10 +1,12 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Customers from "./pages/Customers.jsx";
-import Login from "./pages/Login.jsx";
-import { isAuthed } from "./auth.js";
+import React from "react"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import Login from "./pages/Login.jsx"
+import Customers from "./pages/Customers.jsx"
+import Products from "./pages/Products.jsx"
+import { isAuthed } from "./auth"
 
 function RequireAuth({ children }) {
-  return isAuthed() ? children : <Navigate to="/login" replace />;
+  return isAuthed() ? children : <Navigate to="/login" replace />
 }
 
 export default function App() {
@@ -12,9 +14,10 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/" element={<RequireAuth><Customers /></RequireAuth>} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/customers" element={<RequireAuth><Customers /></RequireAuth>} />
+        <Route path="/products" element={<RequireAuth><Products /></RequireAuth>} />
+        <Route path="*" element={<Navigate to={isAuthed() ? "/customers" : "/login"} replace />} />
       </Routes>
     </BrowserRouter>
-  );
+  )
 }
