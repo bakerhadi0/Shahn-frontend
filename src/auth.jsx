@@ -1,24 +1,19 @@
 import { Navigate } from "react-router-dom";
 
-export function setToken(t){ localStorage.setItem("token", t) }
-export function getToken(){ return localStorage.getItem("token") || "" }
-export function clearToken(){ localStorage.removeItem("token") }
-export function isAuthed(){ return !!getToken() }
+const TOKEN_KEY = "token";
 
-function payload(){
-  const t = getToken();
-  if(!t) return null;
-  const p = t.split(".")[1];
-  try{ return JSON.parse(atob(p)); }catch{ return null }
+export function setToken(t) {
+  localStorage.setItem(TOKEN_KEY, t);
 }
-
-export function getRole(){ return payload()?.role || "user" }
-export function isAdmin(){ return getRole() === "admin" }
-
-export function RequireAuth({ children }){
-  return isAuthed() ? children : <Navigate to="/login" replace />
+export function getToken() {
+  return localStorage.getItem(TOKEN_KEY) || "";
 }
-
-export function RequireAdmin({ children }){
-  return isAuthed() && isAdmin() ? children : <Navigate to="/" replace />
+export function clearToken() {
+  localStorage.removeItem(TOKEN_KEY);
+}
+export function isAuthed() {
+  return !!getToken();
+}
+export function RequireAuth({ children }) {
+  return isAuthed() ? children : <Navigate to="/login" replace />;
 }
