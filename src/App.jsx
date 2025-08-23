@@ -6,13 +6,20 @@ import Products from "./pages/Products.jsx"
 import Sales from "./pages/Sales.jsx"
 import Reports from "./pages/Reports.jsx"
 import Users from "./pages/Users.jsx"
-import { isAuthed, hasRole } from "./auth"
+import Nav from "./components/Nav.jsx"
+import { isAuthed } from "./auth"
 
 function RequireAuth({ children }) {
   return isAuthed() ? children : <Navigate to="/login" replace />
 }
-function RequireRole({ roles, children }) {
-  return hasRole(...(roles||[])) ? children : <Navigate to="/customers" replace />
+
+function Shell({ children }) {
+  return (
+    <div>
+      <Nav />
+      {children}
+    </div>
+  )
 }
 
 export default function App() {
@@ -20,11 +27,11 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/customers" element={<RequireAuth><Customers /></RequireAuth>} />
-        <Route path="/sales" element={<RequireAuth><Sales /></RequireAuth>} />
-        <Route path="/products" element={<RequireAuth><RequireRole roles={["admin"]}><Products /></RequireRole></RequireAuth>} />
-        <Route path="/reports" element={<RequireAuth><RequireRole roles={["admin","seller"]}><Reports /></RequireRole></RequireAuth>} />
-        <Route path="/users" element={<RequireAuth><RequireRole roles={["admin"]}><Users /></RequireRole></RequireAuth>} />
+        <Route path="/customers" element={<RequireAuth><Shell><Customers/></Shell></RequireAuth>} />
+        <Route path="/products" element={<RequireAuth><Shell><Products/></Shell></RequireAuth>} />
+        <Route path="/sales" element={<RequireAuth><Shell><Sales/></Shell></RequireAuth>} />
+        <Route path="/reports" element={<RequireAuth><Shell><Reports/></Shell></RequireAuth>} />
+        <Route path="/users" element={<RequireAuth><Shell><Users/></Shell></RequireAuth>} />
         <Route path="*" element={<Navigate to={isAuthed() ? "/customers" : "/login"} replace />} />
       </Routes>
     </BrowserRouter>
