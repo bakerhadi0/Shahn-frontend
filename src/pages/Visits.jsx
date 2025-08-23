@@ -1,70 +1,43 @@
-import React, { useEffect, useState } from 'react';
-import http from '../http';
+import React, { useEffect, useState } from "react"
+import { http } from "../http"
 
-export default function Visits(){
-  const [customers,setCustomers]=useState([]);
-  const [list,setList]=useState([]);
-  const [form,setForm]=useState({
-    customer:'', purpose:'Follow-up', location:'', notes:'', lat:'', lng:'', designUrl:''
-  });
+export default function Visits() {
+  const [rows,setRows]=useState([])
+  const [f,setF]=useState({ customer:"", date:"", notes:"" })
+  const [editId,setEditId]=useState(null)
 
-  async function loadCustomers(){ const {data}=await http.get('/customers'); setCustomers(data); }
-  async function loadVisits(){
-    const {data}=await http.get('/visits');
-    setList(data||[]);
-  }
+  async function load(){ const {data}=await http.get("/api/visits"); setRows(Array.isArray(data)?data:(data.items||[])) }
+  useEffect(()=>{ load() },[])
 
-  useEffect(()=>{ loadCustomers(); loadVisits(); },[]);
-
-  function getGeo(){
-    if(navigator.geolocation){
-      navigator.geolocation.getCurrentPosition(p=>{
-        setForm(f=>({...f, lat: p.coords.latitude, lng: p.coords.longitude }));
-      });
-    }
-  }
-
-  async function submit(e){
-    e.preventDefault();
-    await http.post('/visits', form);
-    setForm({customer:'', purpose:'Follow-up', location:'', notes:'', lat:'', lng:'', designUrl:''});
-    loadVisits();
-  }
+  async function add(){ await http.post("/api/visits", f); setF({ customer:"", date:"", notes:"" }); await load() }
+  async function save(id){ await http.put(`/api/visits/${id}`, f); setEditId(null); setF({ customer:"", date:"", notes:"" }); await load() }
+  async function del(id){ if(!confirm("حذف؟")) return; await http.delete(`/api/visits/${id}`); await load() }
 
   return (
-    <div style={{padding:16, direction:'rtl'}}>
-      <h2>تسجيل زيارة</h2>
-      <form onSubmit={submit} style={{display:'grid', gap:8, maxWidth:700}}>
-        <select value={form.customer} onChange={e=>setForm({...form,customer:e.target.value})}>
-          <option value="">اختر عميل</option>
-          {customers.map(c=><option key={c._id} value={c._id}>{c.name}</option>)}
-        </select>
-        <input placeholder="الغرض" value={form.purpose} onChange={e=>setForm({...form,purpose:e.target.value})}/>
-        <input placeholder="الموقع (نصي)" value={form.location} onChange={e=>setForm({...form,location:e.target.value})}/>
-        <input placeholder="رابط التصميم (اختياري)" value={form.designUrl} onChange={e=>setForm({...form,designUrl:e.target.value})}/>
-        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr auto', gap:8}}>
-          <input placeholder="Latitude" value={form.lat} onChange={e=>setForm({...form,lat:e.target.value})}/>
-          <input placeholder="Longitude" value={form.lng} onChange={e=>setForm({...form,lng:e.target.value})}/>
-          <button type="button" onClick={getGeo}>GPS</button>
-        </div>
-        <textarea placeholder="ملاحظات" value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}/>
-        <button type="submit">حفظ الزيارة</button>
-      </form>
+    <div style={{maxWidth:900, margin:"24px auto"}}>
+      <h1>الزيارات</h1>
 
-      <h3 style={{marginTop:24}}>أحدث الزيارات</h3>
-      <table style={{width:'100%'}}>
-        <thead><tr><th>العميل</th><th>الغرض</th><th>الموقع</th><th>التاريخ</th></tr></thead>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr) auto",gap:8,marginBottom:12}}>
+        <input placeholder="العميل" value={f.customer} onChange={e=>setF({...f,customer:e.target.value})}/>
+        <input type="date" value={f.date} onChange={e=>setF({...f,date:e.target.value})}/>
+        <input placeholder="ملاحظات" value={f.notes} onChange={e=>setF({...f,notes:e.target.value})}/>
+        {editId ? <button onClick={()=>save(editId)}>حفظ</button> : <button onClick={add}>إضافة</button>}
+      </div>
+
+      <table width="100%" cellPadding="8" style={{borderCollapse:"collapse"}}>
+        <thead><tr><th>العميل</th><th>التاريخ</th><th>ملاحظات</th><th>إجراءات</th></tr></thead>
         <tbody>
-          {list.map(v=>(
-            <tr key={v._id}>
-              <td>{v.customer?.name || v.customer}</td>
-              <td>{v.purpose}</td>
-              <td>{v.location}</td>
-              <td>{new Date(v.createdAt).toLocaleString()}</td>
+          {rows.map(r=>(
+            <tr key={r._id}>
+              <td>{r.customer}</td><td>{(r.date||"").slice(0,10)}</td><td>{r.notes}</td>
+              <td>
+                <button onClick={()=>{ setEditId(r._id); setF({ customer:r.customer||"", date:(r.date||"").slice(0,10), notes:r.notes||"" }) }}>تعديل</button>
+                <button onClick={()=>del(r._id)} style={{marginInlineStart:8}}>حذف</button>
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
-  );
+  )
 }
