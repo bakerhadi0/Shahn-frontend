@@ -7,7 +7,7 @@ import Sales from "./pages/Sales.jsx"
 import Reports from "./pages/Reports.jsx"
 import Users from "./pages/Users.jsx"
 import Nav from "./components/Nav.jsx"
-import { isAuthed } from "./auth"
+import { isAuthed } from "./auth.jsx"
 
 function RequireAuth({ children }) {
   return isAuthed() ? children : <Navigate to="/login" replace />

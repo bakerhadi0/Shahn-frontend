@@ -8,7 +8,7 @@ import Reports from "./pages/Reports.jsx";
 import Login from "./pages/Login.jsx";
 import Users from "./pages/Users.jsx";
 import Nav from "./components/Nav.jsx";
-import { isAuthed, RequireAuth, RequireAdmin } from "./auth";
+import { isAuthed, RequireAuth, RequireAdmin } from "./auth.jsx";
 
 export default function App(){
   return (
