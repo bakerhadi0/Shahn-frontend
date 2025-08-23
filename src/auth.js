@@ -1,8 +1,24 @@
-export const setToken = t => localStorage.setItem("token", t)
-export const getToken = () => localStorage.getItem("token")
-export const clearToken = () => { localStorage.removeItem("token"); localStorage.removeItem("user") }
-export const isAuthed = () => !!getToken()
-export const setUser = u => localStorage.setItem("user", JSON.stringify(u || {}))
-export const getUser = () => { try { return JSON.parse(localStorage.getItem("user") || "{}") } catch { return {} } }
-export const getRole = () => (getUser().role || "user")
-export const hasRole = (...roles) => roles.includes(getRole())
+import { Navigate } from "react-router-dom";
+
+export function setToken(t){ localStorage.setItem("token", t) }
+export function getToken(){ return localStorage.getItem("token") || "" }
+export function clearToken(){ localStorage.removeItem("token") }
+export function isAuthed(){ return !!getToken() }
+
+function payload(){
+  const t = getToken();
+  if(!t) return null;
+  const p = t.split(".")[1];
+  try{ return JSON.parse(atob(p)); }catch{ return null }
+}
+
+export function getRole(){ return payload()?.role || "user" }
+export function isAdmin(){ return getRole() === "admin" }
+
+export function RequireAuth({ children }){
+  return isAuthed() ? children : <Navigate to="/login" replace />
+}
+
+export function RequireAdmin({ children }){
+  return isAuthed() && isAdmin() ? children : <Navigate to="/" replace />
+}
